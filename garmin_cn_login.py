@@ -11,7 +11,8 @@ from garminconnect import (
     GarminConnectTooManyRequestsError,
 )
 
-TOKEN_DIR = Path("/opt/garmin-auth/cn_tokens")
+BASE_DIR = Path(__file__).resolve().parent
+TOKEN_DIR = BASE_DIR / "cn_tokens"
 TOKEN_DIR.mkdir(parents=True, exist_ok=True)
 
 

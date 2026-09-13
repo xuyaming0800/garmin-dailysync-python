@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+
 from garminconnect import Garmin
 
-TOKEN_DIR = "/opt/garmin-auth/cn_tokens"
+TOKEN_DIR = Path(__file__).resolve().parent / "cn_tokens"
 
 g = Garmin(is_cn=True)
 
-g.login(TOKEN_DIR)
+g.login(str(TOKEN_DIR))
 
 profile = g.get_full_name()
 

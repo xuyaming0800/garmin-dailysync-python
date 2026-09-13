@@ -14,7 +14,7 @@ from pathlib import Path
 
 from garminconnect import Garmin
 
-BASE_DIR = Path("/opt/garmin-auth")
+BASE_DIR = Path(__file__).resolve().parent
 
 CN_TOKEN_DIR = BASE_DIR / "cn_tokens"
 GLOBAL_TOKEN_DIR = BASE_DIR / "global_tokens"

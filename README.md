@@ -33,7 +33,7 @@ Garmin 中国区 -> Garmin 国际区
 | `sync.py` | 活动同步主程序 |
 | `garmin_cn_login.py` | 中国区首次登录和 MFA 验证 |
 | `test_cn.py` | 检查中国区 Token 是否仍然有效 |
-| `run_daily_sync.sh` | 定时任务入口，自动计算当前时间减一天 |
+| `run_daily_sync.sh` | 定时任务入口，工作目录需按实际部署位置设置，并自动计算当前时间减一天 |
 | `cn_tokens/` | 中国区登录 Token，不应提交到 Git |
 | `global_tokens/` | 国际区登录 Token，不应提交到 Git |
 | `sync_state.db` | 已同步活动记录 |
@@ -48,13 +48,9 @@ Garmin 中国区 -> Garmin 国际区
 - Python 包 `garminconnect`
 - 如需自动执行，需要 cron
 
-当前脚本使用固定目录：
+Python 脚本会以脚本自身所在目录作为项目目录，因此可以部署到任意位置。Token、数据库和锁文件都会保存在项目目录下，无需修改 Python 源码。
 
-```text
-/opt/garmin-auth
-```
-
-如果部署到其他目录，需要同步修改 Python 脚本中的 `BASE_DIR`、`TOKEN_DIR` 以及 `run_daily_sync.sh`。
+`run_daily_sync.sh` 中的 `cd` 命令仍需按照实际部署位置设置；配置 cron 时，脚本路径和日志路径也需要使用实际路径。下面以 `/opt/garmin-auth` 为例。
 
 ## 安装
 
@@ -89,10 +85,10 @@ cd /opt/garmin-auth
 ./venv/bin/python garmin_cn_login.py
 ```
 
-按提示输入中国区邮箱、密码和 MFA 验证码。成功后 Token 会保存到：
+按提示输入中国区邮箱、密码和 MFA 验证码。成功后 Token 会保存到项目目录下的：
 
 ```text
-/opt/garmin-auth/cn_tokens
+cn_tokens/
 ```
 
 不要连续反复尝试登录，否则 Garmin 可能返回 429 限流。
@@ -116,10 +112,10 @@ User: 用户名称
 ./venv/bin/python sync.py --init-global
 ```
 
-按提示输入国际区邮箱、密码和 MFA 验证码。成功后 Token 会保存到：
+按提示输入国际区邮箱、密码和 MFA 验证码。成功后 Token 会保存到项目目录下的：
 
 ```text
-/opt/garmin-auth/global_tokens
+global_tokens/
 ```
 
 ## 手动同步
@@ -194,13 +190,22 @@ export GARMIN_SYNC_START_TIME="2026-09-01 08:30:00"
 
 ## 每日定时同步
 
-项目已配置 root 用户的 cron：
+先确认 `run_daily_sync.sh` 中的工作目录与实际部署位置一致：
+
+```bash
+# 请根据项目的实际部署位置设置工作目录。
+cd /opt/garmin-auth
+```
+
+然后配置 cron。以下以项目部署在 `/opt/garmin-auth`、使用 root 用户的 cron 为例：
 
 ```cron
 0 1 * * * /opt/garmin-auth/run_daily_sync.sh >> /opt/garmin-auth/sync-cron.log 2>&1
 ```
 
 它会在每天服务器本地时间凌晨 1 点运行。`run_daily_sync.sh` 会计算“当前时间减一天”并传给 `--start-time`。
+
+如果项目部署在其他位置，需要同时替换 cron 中的脚本路径、日志路径，以及 `run_daily_sync.sh` 中的工作目录。
 
 例如任务在 `2026-09-14 01:00:00` 运行，实际传入：
 
