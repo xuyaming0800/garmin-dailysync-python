@@ -1,0 +1,15 @@
+# Garmin authentication tokens
+cn_tokens/
+global_tokens/
+
+# Python virtual environment and caches
+venv/
+__pycache__/
+*.py[cod]
+
+# Local sync state and locks
+*.db
+*.lock
+
+# Runtime logs
+*.log

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -eu
+
+cd /opt/garmin-auth
+
+start_time=$(/usr/bin/date --date="1 day ago" "+%Y-%m-%d %H:%M:%S")
+exec ./venv/bin/python sync.py --start-time "$start_time"
