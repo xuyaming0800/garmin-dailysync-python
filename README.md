@@ -14,7 +14,7 @@
 - 上传顺序为从旧到新，尽量保持活动顺序稳定。
 - 使用文件锁避免多个同步任务同时执行。
 - 支持 dry-run，只检查活动而不下载和上传。
-- 支持每天凌晨 1 点自动同步最近 24 小时的活动。
+- 支持每天凌晨 00:30 自动同步前一自然日的活动。
 
 ## 当前范围
 
@@ -33,7 +33,7 @@ Garmin 中国区 -> Garmin 国际区
 | `sync.py` | 活动同步主程序 |
 | `garmin_cn_login.py` | 中国区首次登录和 MFA 验证 |
 | `test_cn.py` | 检查中国区 Token 是否仍然有效 |
-| `run_daily_sync.sh` | 定时任务入口，工作目录需按实际部署位置设置，并自动计算当前时间减一天 |
+| `run_daily_sync.sh` | 定时任务入口，自动定位项目目录并计算前一自然日的时间范围 |
 | `cn_tokens/` | 中国区登录 Token，不应提交到 Git |
 | `global_tokens/` | 国际区登录 Token，不应提交到 Git |
 | `sync_state.db` | 已同步活动记录 |
@@ -50,7 +50,7 @@ Garmin 中国区 -> Garmin 国际区
 
 Python 脚本会以脚本自身所在目录作为项目目录，因此可以部署到任意位置。Token、数据库和锁文件都会保存在项目目录下，无需修改 Python 源码。
 
-`run_daily_sync.sh` 中的 `cd` 命令仍需按照实际部署位置设置；配置 cron 时，脚本路径和日志路径也需要使用实际路径。下面以 `/opt/garmin-auth` 为例。
+配置 cron 时，脚本路径和日志路径需要使用实际部署路径。下面以 `/opt/garmin-auth` 为例。
 
 ## 安装
 
@@ -190,27 +190,21 @@ export GARMIN_SYNC_START_TIME="2026-09-01 08:30:00"
 
 ## 每日定时同步
 
-先确认 `run_daily_sync.sh` 中的工作目录与实际部署位置一致：
-
-```bash
-# 请根据项目的实际部署位置设置工作目录。
-cd /opt/garmin-auth
-```
-
-然后配置 cron。以下以项目部署在 `/opt/garmin-auth`、使用 root 用户的 cron 为例：
+配置 cron。以下以项目部署在 `/opt/garmin-auth`、使用 root 用户的 cron 为例：
 
 ```cron
-0 1 * * * /opt/garmin-auth/run_daily_sync.sh >> /opt/garmin-auth/sync-cron.log 2>&1
+CRON_TZ=Asia/Shanghai
+30 0 * * * /opt/garmin-auth/run_daily_sync.sh >> /opt/garmin-auth/sync-cron.log 2>&1
 ```
 
-它会在每天服务器本地时间凌晨 1 点运行。`run_daily_sync.sh` 会计算“当前时间减一天”并传给 `--start-time`。
+它会在每天北京时间 00:30 运行。`run_daily_sync.sh` 会计算前一自然日的完整时间范围，并分别传给 `--start-time` 和 `--end-time`。
 
-如果项目部署在其他位置，需要同时替换 cron 中的脚本路径、日志路径，以及 `run_daily_sync.sh` 中的工作目录。
+如果项目部署在其他位置，需要替换 cron 中的脚本路径和日志路径；脚本会自动定位自己的工作目录。
 
-例如任务在 `2026-09-14 01:00:00` 运行，实际传入：
+例如任务在 `2026-09-14 00:30:00` 运行，实际传入：
 
 ```text
---start-time "2026-09-13 01:00:00"
+--start-time "2026-09-13 00:00:00" --end-time "2026-09-14 00:00:00"
 ```
 
 检查定时任务和 cron 服务：

@@ -2,8 +2,12 @@
 
 set -eu
 
-# 请根据项目的实际部署位置设置工作目录。
-cd /opt/garmin-auth
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$SCRIPT_DIR"
 
-start_time=$(/usr/bin/date --date="1 day ago" "+%Y-%m-%d %H:%M:%S")
-exec ./venv/bin/python sync.py --start-time "$start_time"
+start_time=$(/usr/bin/date --date="yesterday 00:00:00" "+%Y-%m-%d %H:%M:%S")
+end_time=$(/usr/bin/date --date="today 00:00:00" "+%Y-%m-%d %H:%M:%S")
+
+exec ./venv/bin/python sync.py \
+    --start-time "$start_time" \
+    --end-time "$end_time"

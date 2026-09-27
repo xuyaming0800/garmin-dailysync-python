@@ -83,7 +83,7 @@ def get_activity_start_datetime(activity):
     return parsed.replace(tzinfo=None)
 
 
-def load_activities(cn, start_time=None):
+def load_activities(cn, start_time=None, end_time=None):
     """读取待检查活动；指定起始时间后自动翻页到该时间边界。"""
 
     if start_time is None:
@@ -116,10 +116,10 @@ def load_activities(cn, start_time=None):
                 )
                 continue
 
-            if activity_time >= start_time:
-                activities.append(activity)
-            else:
+            if activity_time < start_time:
                 reached_start_time = True
+            elif end_time is None or activity_time < end_time:
+                activities.append(activity)
 
         if reached_start_time or len(page) < SYNC_LIMIT:
             break
@@ -415,7 +415,7 @@ def sync_one(
             raise
 
 
-def run_sync(dry_run=False, start_time=None):
+def run_sync(dry_run=False, start_time=None, end_time=None):
     BASE_DIR.mkdir(
         parents=True,
         exist_ok=True,
@@ -443,6 +443,7 @@ def run_sync(dry_run=False, start_time=None):
         activities = load_activities(
             cn,
             start_time=start_time,
+            end_time=end_time,
         )
 
         log(f"获取到 {len(activities)} 条活动")
@@ -567,12 +568,30 @@ def main():
     )
 
     parser.add_argument(
+        "--end-time",
+        type=parse_sync_start_time,
+        default=None,
+        metavar="TIME",
+        help=(
+            "只同步此本地时间之前（不含）的活动；格式与 "
+            "--start-time 相同"
+        ),
+    )
+
+    parser.add_argument(
         "--state",
         action="store_true",
         help="查看最近同步记录",
     )
 
     args = parser.parse_args()
+
+    if (
+        args.start_time is not None
+        and args.end_time is not None
+        and args.end_time <= args.start_time
+    ):
+        parser.error("--end-time 必须晚于 --start-time")
 
     if args.init_global:
         init_global()
@@ -585,6 +604,7 @@ def main():
     run_sync(
         dry_run=args.dry_run,
         start_time=args.start_time,
+        end_time=args.end_time,
     )
 
 
